@@ -1,0 +1,32 @@
+﻿Yes, absolutely. In fact, starting with a conservative 12-day worst-case ceiling and systematically reducing it as milestones clear is a psychological masterstroke for insurance onboarding. Customers are much happier when a timeline "fast-tracks" from 12 days down to 3 days than when an optimistic 3-day timeline keeps getting extended because of back-end delays.
+Here is exactly how the backend engine will calculate and push the decreasing 12-day ETA based on the term.jpg and health.jpg paths:
+The 12-Day Countdown Calibration Matrix
+The moment the application hits the database, the clock is set to 12 Days. As the customer passes the triage gates, the system cuts down the remaining days based on the track they qualify for.
+Track A: The Express Track (No Medicals)
+* Stage 1: Docs Uploaded & Ingested ➡️ 12 Days Remaining (Standard baseline set)
+* Stage 2: PIQA Passed (No Medicals Flagged) ➡️ ⚡ Fast-Tracked to 3 Days Remaining (System safely deletes the 9-day medical buffer)
+* Stage 3: Underwriting Desk Review ➡️ 1-2 Days Remaining
+* Stage 5: Policy Approved ➡️ 0 Days Remaining (Issued!)
+Track B: The Tele-Medical Track
+* Stage 1: Docs Uploaded & Ingested ➡️ 12 Days Remaining
+* Stage 2: PIQA Passed (Tele-Med Flagged) ➡️ 6 Days Remaining (System eliminates the heavy 6-day physical lab/courier buffer)
+* Stage 2 Contact: Tele-Medical Completed ➡️ 3 Days Remaining (Awaiting report sync)
+* Stage 3: Underwriting Desk Review ➡️ 1-2 Days Remaining
+* Stage 5: Policy Approved ➡️ 0 Days Remaining (Issued!)
+Track C: The Physical Medical Track
+* Stage 1: Docs Uploaded & Ingested ➡️ 12 Days Remaining
+* Stage 2: PIQA Passed (Physical Medical Flagged) ➡️ 10 Days Remaining (Awaiting slot booking)
+* Stage 2 Action: Doctor/Home Visit Completed ➡️ 5 Days Remaining (Awaiting physical lab processing)
+* Stage 3: Underwriting Desk Review ➡️ 1-2 Days Remaining
+* Stage 5: Policy Approved/Countered ➡️ 0 Days Remaining (Issued!)
+Crucial Edge Case: Handling the "Snag" (Stage 4)
+The biggest challenge with a countdown clock is a Document Snag (e.g., the user uploaded an unreadable bank statement). If the user takes 4 days to upload a new one, a strict countdown will hit 0 days while the file is still open, creating panic.
+The Solution: The "Clock Freeze" Rule
+To preserve the decreasing order layout without lying to the user, implement a State-Based Freeze:
+1. When a snag is raised, freeze the countdown number wherever it currently stands (e.g., "3 Days Remaining").
+2. Switch the secondary status indicator on WhatsApp/Email from a passive countdown to an active user action requirement.
+WhatsApp Copy Example (The Freeze):
+"Hi {{First_Name}}, we've hit a minor speed bump. 📑 Our underwriters need a clearer copy of your income proof to finish up. Your application is currently parked at Step 3 of 5.
+Time Remaining: 3 Days (Clock paused until upload)
+Reply directly to this text with a photo of your document to unfreeze your timeline!"
+Once the document hits your database, the system unfreezes the clock, immediately lowering it to 2 Days Remaining to reward the user for taking action.

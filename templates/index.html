@@ -1,0 +1,404 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Control Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Inter", sans-serif;
+            background: #eef1f5;
+            color: #1a1f2e;
+            min-height: 100vh;
+            padding: 32px 20px;
+        }
+        .page { max-width: 1080px; margin: 0 auto; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .header h1 { font-size: 26px; font-weight: 700; color: #1a1f2e; }
+        .connection-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 20px;
+            padding: 6px 14px; font-size: 13px; font-weight: 500; color: #374151;
+        }
+        .dot { width: 9px; height: 9px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+        .dot.connected { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+        .dot.waiting   { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+        .card {
+            background: #fff; border-radius: 16px; border: 1px solid #e8ecf0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 24px; margin-bottom: 20px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; color: #1a1f2e; margin-bottom: 20px; }
+        .config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .config-group label {
+            display: block; font-size: 12px; font-weight: 500; color: #6b7280;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+        }
+        .config-group input, .config-group select {
+            width: 100%; padding: 10px 14px; font-size: 14px; font-family: "Inter", sans-serif;
+            border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f9fafb;
+            color: #1a1f2e; outline: none; transition: border-color 0.2s, box-shadow 0.2s; appearance: none;
+        }
+        .config-group input::placeholder { color: #9ca3af; }
+        .config-group input:focus, .config-group select:focus {
+            border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background: #fff;
+        }
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: "▾"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            color: #6b7280; pointer-events: none; font-size: 13px;
+        }
+        .input-icon-wrapper { position: relative; }
+        .input-icon-wrapper .icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: #9ca3af; font-size: 15px;
+        }
+        .input-icon-wrapper input { padding-left: 36px; }
+        .workflow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+        .workflow-grid.row2 { grid-template-columns: repeat(5, 1fr); }
+        .stage-card {
+            border: 1.5px solid #e8ecf0; border-radius: 14px; padding: 16px; background: #fff;
+            transition: box-shadow 0.2s, border-color 0.2s; display: flex; flex-direction: column; gap: 10px;
+        }
+        .stage-card:hover:not(.disabled) { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .stage-card.disabled { opacity: 0.45; }
+        .stage-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+        }
+        .icon-blue   { background: #eff6ff; }
+        .icon-violet { background: #f5f3ff; }
+        .icon-teal   { background: #f0fdfa; }
+        .icon-amber  { background: #fffbeb; border: 1.5px solid #fde68a; }
+        .icon-green  { background: #f0fdf4; }
+        .icon-red    { background: #fef2f2; }
+        .icon-indigo { background: #eef2ff; }
+        .stage-name { font-size: 13px; font-weight: 600; color: #1a1f2e; line-height: 1.35; }
+        .stage-desc { font-size: 12px; color: #6b7280; line-height: 1.5; flex: 1; }
+        .trigger-btn {
+            width: 100%; padding: 9px 12px; font-size: 12.5px; font-weight: 600;
+            font-family: "Inter", sans-serif; border: none; border-radius: 8px; cursor: pointer;
+            transition: background 0.2s, transform 0.1s, opacity 0.2s; letter-spacing: 0.01em;
+        }
+        .trigger-btn:active:not(:disabled) { transform: scale(0.97); }
+        .trigger-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .btn-default { background: #eff6ff; color: #3b82f6; }
+        .btn-default:hover:not(:disabled) { background: #dbeafe; }
+        .btn-violet  { background: #f5f3ff; color: #7c3aed; }
+        .btn-violet:hover:not(:disabled)  { background: #ede9fe; }
+        .btn-teal    { background: #f0fdfa; color: #0d9488; }
+        .btn-teal:hover:not(:disabled)    { background: #ccfbf1; }
+        .btn-amber   { background: #fffbeb; color: #d97706; border: 1.5px solid #fde68a; }
+        .btn-amber:hover:not(:disabled)   { background: #fef3c7; }
+        .btn-green   { background: #10b981; color: #fff; }
+        .btn-green:hover:not(:disabled)   { background: #059669; }
+        .btn-red     { background: #ef4444; color: #fff; }
+        .btn-red:hover:not(:disabled)     { background: #dc2626; }
+        .btn-indigo  { background: #6366f1; color: #fff; }
+        .btn-indigo:hover:not(:disabled)  { background: #4f46e5; }
+        .stage-card.amber-card  { border-color: #fde68a; background: #fffdf4; }
+        .stage-card.green-card  { background: #f0fdf4; border-color: #bbf7d0; }
+        .stage-card.red-card    { background: #fef2f2; border-color: #fecaca; }
+        .stage-card.indigo-card { background: #eef2ff; border-color: #c7d2fe; }
+        .custom-textarea {
+            width: 100%; min-height: 110px; padding: 14px; font-size: 14px;
+            font-family: "Inter", sans-serif; border: 1.5px solid #e2e8f0; border-radius: 10px;
+            background: #f9fafb; color: #1a1f2e; resize: vertical; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 14px;
+        }
+        .custom-textarea::placeholder { color: #9ca3af; }
+        .custom-textarea:focus {
+            border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background: #fff;
+        }
+        .send-btn {
+            width: 100%; padding: 13px; font-size: 14px; font-weight: 600;
+            font-family: "Inter", sans-serif; background: #6366f1; color: #fff;
+            border: none; border-radius: 10px; cursor: pointer; transition: background 0.2s, transform 0.1s;
+        }
+        .send-btn:hover { background: #4f46e5; }
+        .send-btn:active { transform: scale(0.99); }
+        .upload-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+        .upload-item {
+            display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+            border: 1.5px solid #e8ecf0; border-radius: 12px; background: #f9fafb;
+        }
+        .upload-file-icon {
+            width: 40px; height: 40px; border-radius: 8px; background: #eff6ff;
+            display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+        }
+        .upload-info { flex: 1; min-width: 0; }
+        .upload-name { font-size: 13px; font-weight: 600; color: #1a1f2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .upload-meta { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+        .download-btn {
+            padding: 8px 18px; font-size: 13px; font-weight: 600; font-family: "Inter", sans-serif;
+            background: #fff; color: #374151; border: 1.5px solid #e2e8f0; border-radius: 8px;
+            cursor: pointer; text-decoration: none; white-space: nowrap; transition: border-color 0.2s, background 0.2s;
+        }
+        .download-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+        .upload-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+        .no-uploads { text-align: center; color: #9ca3af; font-size: 14px; padding: 24px 0; }
+        #toast {
+            position: fixed; bottom: 28px; right: 28px; background: #1a1f2e; color: #fff;
+            padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18); opacity: 0; transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s; pointer-events: none; z-index: 999; max-width: 320px;
+        }
+        #toast.show  { opacity: 1; transform: translateY(0); }
+        #toast.error { background: #ef4444; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <div class="header">
+        <h1>Tracker Control Panel</h1>
+        <div class="connection-badge">
+            <div class="dot" id="conn-dot"></div>
+            <span id="conn-label">Waiting for users...</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Configuration</div>
+        <div class="config-row">
+            <div class="config-group">
+                <label>Target User</label>
+                <div class="input-icon-wrapper">
+                    <span class="icon">🔍</span>
+                    <input type="text" id="target-username" placeholder="Target Telegram @username">
+                </div>
+            </div>
+            <div class="config-group">
+                <label>Insurance Type</label>
+                <div class="select-wrapper">
+                    <select id="sel-medical">
+                        <option value="physical">Physical Medical</option>
+                        <option value="tele">Tele-Medical</option>
+                        <option value="none">No Medical</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Application Workflow</div>
+        <div class="workflow-grid">
+            <div class="stage-card" id="card-0">
+                <div class="stage-icon icon-blue">📥</div>
+                <div>
+                    <div class="stage-name">Stage 0: Application Received</div>
+                    <div class="stage-desc">Notify user of received application.</div>
+                </div>
+                <button id="btn-0" class="trigger-btn btn-default" onclick="sendStage('0')">Trigger Stage</button>
+            </div>
+            <div class="stage-card" id="card-1">
+                <div class="stage-icon icon-blue">📤</div>
+                <div>
+                    <div class="stage-name">Stage 1: Document Upload Prompt</div>
+                    <div class="stage-desc">Request necessary documents from user.</div>
+                </div>
+                <button id="btn-1" class="trigger-btn btn-default" onclick="sendStage('1')">Trigger Stage</button>
+            </div>
+            <div class="stage-card" id="card-2a">
+                <div class="stage-icon icon-violet">🩺</div>
+                <div>
+                    <div class="stage-name">Stage 2A: Medical Test Required</div>
+                    <div class="stage-desc">Schedule required medical tests.</div>
+                </div>
+                <button id="btn-2a" class="trigger-btn btn-violet" onclick="sendStage('2a')">Trigger Stage</button>
+            </div>
+            <div class="stage-card" id="card-2b">
+                <div class="stage-icon icon-teal">✅</div>
+                <div>
+                    <div class="stage-name">Stage 2B: Medical Completed</div>
+                    <div class="stage-desc">Confirm medical tests are done.</div>
+                </div>
+                <button id="btn-2b" class="trigger-btn btn-teal" onclick="sendStage('2b')" disabled>Trigger Stage</button>
+            </div>
+        </div>
+        <div class="workflow-grid row2">
+            <div class="stage-card" id="card-3">
+                <div class="stage-icon icon-violet">🔍</div>
+                <div>
+                    <div class="stage-name">Stage 3: Underwriting</div>
+                    <div class="stage-desc">Application is under review.</div>
+                </div>
+                <button id="btn-3" class="trigger-btn btn-violet" onclick="sendStage('3')">Trigger Stage</button>
+            </div>
+            <div class="stage-card amber-card" id="card-4">
+                <div class="stage-icon icon-amber">⚠️</div>
+                <div>
+                    <div class="stage-name">Stage 4: Missing Docs</div>
+                    <div class="stage-desc">Requires user upload of missing documents.</div>
+                </div>
+                <button id="btn-4" class="trigger-btn btn-amber" onclick="sendStage('4')">Trigger Stage</button>
+            </div>
+            <div class="stage-card green-card" id="card-5a">
+                <div class="stage-icon icon-green">✔️</div>
+                <div>
+                    <div class="stage-name">Stage 5: Approved</div>
+                    <div class="stage-desc">Application is approved.</div>
+                </div>
+                <button id="btn-5a" class="trigger-btn btn-green" onclick="sendStage('5a')">Trigger Stage</button>
+            </div>
+            <div class="stage-card red-card" id="card-5b">
+                <div class="stage-icon icon-red">✖️</div>
+                <div>
+                    <div class="stage-name">Stage 5: Rejected</div>
+                    <div class="stage-desc">Application is rejected.</div>
+                </div>
+                <button id="btn-5b" class="trigger-btn btn-red" onclick="sendStage('5b')">Trigger Stage</button>
+            </div>
+            <div class="stage-card indigo-card" id="card-5c">
+                <div class="stage-icon icon-indigo">🔄</div>
+                <div>
+                    <div class="stage-name">Stage 5: Counter Offer</div>
+                    <div class="stage-desc">Send a counter offer.</div>
+                </div>
+                <button id="btn-5c" class="trigger-btn btn-indigo" onclick="sendStage('5c')">Trigger Stage</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Custom Message</div>
+        <textarea id="custom-message" class="custom-textarea" placeholder="Type your custom message here..."></textarea>
+        <button class="send-btn" onclick="sendCustom()">Send Message</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">User Uploads</div>
+        <div class="upload-list" id="uploads-list">
+            <div class="no-uploads">No uploads yet.</div>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+    function showToast(msg, isError) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "show" + (isError ? " error" : "");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function() { t.className = ""; }, 3200);
+    }
+
+    async function checkStatus() {
+        try {
+            const res  = await fetch("/api/status");
+            const data = await res.json();
+            const dot   = document.getElementById("conn-dot");
+            const label = document.getElementById("conn-label");
+            if (data.users && data.users.length > 0) {
+                dot.className     = "dot connected";
+                label.textContent = "Connected: " + data.users.join(", ");
+            } else {
+                dot.className     = "dot waiting";
+                label.textContent = "Waiting for users...";
+            }
+            const list = document.getElementById("uploads-list");
+            if (data.uploads && data.uploads.length > 0) {
+                list.innerHTML = "";
+                data.uploads.slice().reverse().forEach(function(upload) {
+                    const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(upload.filename);
+                    const item = document.createElement("div");
+                    item.className = "upload-item";
+                    const iconHtml = isImage
+                        ? '<img class="upload-thumb" src="' + upload.url + '" alt="' + upload.filename + '">'
+                        : '<div class="upload-file-icon">📄</div>';
+                    const username = upload.username || "Unknown";
+                    item.innerHTML = iconHtml +
+                        '<div class="upload-info">' +
+                        '<div class="upload-name">' + upload.filename + "</div>" +
+                        '<div class="upload-meta">Uploaded by @' + username + "</div>" +
+                        "</div>" +
+                        '<a class="download-btn" href="' + upload.url + '" target="_blank">Download</a>';
+                    list.appendChild(item);
+                });
+            } else {
+                list.innerHTML = '<div class="no-uploads">No uploads yet.</div>';
+            }
+        } catch (err) { console.error("Status error:", err); }
+    }
+
+    async function sendStage(stage) {
+        const username = document.getElementById("target-username").value.trim();
+        const medical  = document.getElementById("sel-medical").value;
+        if (!username) { showToast("Please enter a target username.", true); return; }
+        try {
+            const params = new URLSearchParams({ username: username, medical: medical });
+            const res  = await fetch("/api/send/" + stage + "?" + params.toString(), { method: "POST" });
+            const data = await res.json();
+            if (data.error) {
+                showToast("Error: " + data.error, true);
+            } else {
+                showToast("Stage " + stage.toUpperCase() + " triggered successfully!");
+                if (stage === "5a" || stage === "5b" || stage === "5c") {
+                    var toDisable = (stage === "5c") ? ["5b", "5c"] : ["5a", "5b", "5c"];
+                    toDisable.forEach(function(s) {
+                        var b = document.getElementById("btn-" + s);
+                        var c = document.getElementById("card-" + s);
+                        if (b) b.disabled = true;
+                        if (c) c.classList.add("disabled");
+                    });
+                } else if (stage !== "4") {
+                    var btn  = document.getElementById("btn-" + stage);
+                    var card = document.getElementById("card-" + stage);
+                    if (btn)  btn.disabled = true;
+                    if (card) card.classList.add("disabled");
+                }
+            }
+        } catch (err) { showToast("Request failed. Is the server running?", true); }
+    }
+
+    document.getElementById("sel-medical").addEventListener("change", function(e) {
+        var val    = e.target.value;
+        var btn2a  = document.getElementById("btn-2a");
+        var btn2b  = document.getElementById("btn-2b");
+        var card2a = document.getElementById("card-2a");
+        var card2b = document.getElementById("card-2b");
+        if (val === "none") {
+            btn2a.disabled = true;  card2a.classList.add("disabled");
+            btn2b.disabled = true;  card2b.classList.add("disabled");
+        } else {
+            if (!card2a.classList.contains("disabled")) btn2a.disabled = false;
+            if (!card2b.classList.contains("disabled")) btn2b.disabled = false;
+            card2a.classList.remove("disabled");
+            card2b.classList.remove("disabled");
+        }
+    });
+
+    document.getElementById("sel-medical").dispatchEvent(new Event("change"));
+
+    async function sendCustom() {
+        var username = document.getElementById("target-username").value.trim();
+        var text     = document.getElementById("custom-message").value;
+        if (!username) { showToast("Please enter a target username.", true); return; }
+        if (!text.trim()) { showToast("Please type a message first.", true); return; }
+        try {
+            var res  = await fetch("/api/send_custom", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username, text: text })
+            });
+            var data = await res.json();
+            if (data.error) {
+                showToast("Error: " + data.error, true);
+            } else {
+                showToast("Custom message sent!");
+                document.getElementById("custom-message").value = "";
+            }
+        } catch (err) { showToast("Request failed.", true); }
+    }
+
+    setInterval(checkStatus, 2000);
+    checkStatus();
+</script>
+</body>
+</html>

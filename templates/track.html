@@ -1,0 +1,439 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Application Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f0f4ff;
+            --card: #ffffff;
+            --border: #e4e9f5;
+            --text: #111827;
+            --muted: #6b7280;
+            --accent: #6366f1;
+            --accent-light: #eef2ff;
+            --green: #10b981;
+            --green-light: #d1fae5;
+            --amber: #f59e0b;
+            --amber-light: #fef3c7;
+            --red: #ef4444;
+            --red-light: #fee2e2;
+            --indigo: #6366f1;
+            --indigo-light: #eef2ff;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0 0 60px 0;
+        }
+
+        /* ── Header Bar ── */
+        .top-bar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        }
+        .brand-icon {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+        }
+        .brand-text { flex: 1; }
+        .brand-name { font-size: 15px; font-weight: 700; color: var(--text); }
+        .brand-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+        .live-badge {
+            display: flex; align-items: center; gap: 5px;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            border-radius: 20px; padding: 4px 10px;
+            font-size: 11.5px; font-weight: 600; color: var(--green);
+        }
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+            animation: pulse-green 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+            50%       { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+        }
+
+        /* ── Main Content ── */
+        .content { max-width: 480px; margin: 0 auto; padding: 24px 16px 0; }
+
+        /* ── ETA Card ── */
+        .eta-card {
+            border-radius: 18px;
+            padding: 20px 22px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .eta-card.active   { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; }
+        .eta-card.frozen   { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: #fff; }
+        .eta-card.done     { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
+        .eta-card.waiting  { background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: #fff; }
+        .eta-card::after {
+            content: "";
+            position: absolute; right: -20px; top: -20px;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+        .eta-label  { font-size: 12px; font-weight: 600; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .eta-days   { font-size: 38px; font-weight: 800; line-height: 1; }
+        .eta-unit   { font-size: 14px; font-weight: 500; opacity: 0.85; margin-top: 4px; }
+        .eta-ref    { font-size: 12px; font-weight: 500; opacity: 0.65; margin-top: 12px; letter-spacing: 0.03em; }
+
+        /* ── Snag Banner ── */
+        .snag-banner {
+            background: #fffbeb;
+            border: 1.5px solid #fde68a;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .snag-banner.hidden { display: none; }
+        .snag-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+        .snag-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 3px; }
+        .snag-desc  { font-size: 12px; color: #b45309; line-height: 1.5; }
+
+        /* ── Timeline ── */
+        .timeline-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 20px 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .timeline-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 20px; }
+
+        .timeline { position: relative; }
+
+        .tl-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        /* vertical line */
+        .tl-item:not(:last-child) .tl-line {
+            position: absolute;
+            left: 19px;
+            top: 44px;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+        .tl-item.completed:not(:last-child) .tl-line { background: var(--green); }
+        .tl-item.active:not(:last-child) .tl-line    { background: linear-gradient(to bottom, var(--accent), var(--border)); }
+
+        /* node */
+        .tl-node {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+            position: relative; z-index: 1;
+            transition: transform 0.3s;
+        }
+        .tl-item.completed .tl-node { background: var(--green); }
+        .tl-item.completed .tl-node::after {
+            content: "✓";
+            position: absolute;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .tl-item.completed .tl-node-icon { display: none; }
+
+        .tl-item.active .tl-node {
+            background: var(--accent);
+            box-shadow: 0 0 0 0 rgba(99,102,241,0.5);
+            animation: pulse-node 2s ease-in-out infinite;
+        }
+        .tl-item.active .tl-node-icon { color: #fff; }
+        @keyframes pulse-node {
+            0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.5); }
+            60%  { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+            100% { box-shadow: 0 0 0 0   rgba(99,102,241,0); }
+        }
+        .tl-item.active.final-green .tl-node  { background: var(--green); animation: pulse-green-node 2s ease-in-out infinite; }
+        .tl-item.active.final-red .tl-node    { background: var(--red); animation: none; }
+        .tl-item.active.final-indigo .tl-node { background: var(--indigo); animation: none; }
+        @keyframes pulse-green-node {
+            0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.5); }
+            60%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
+        }
+
+        .tl-item.pending .tl-node { background: #f3f4f6; border: 2px solid var(--border); }
+        .tl-item.pending .tl-node-icon { color: #d1d5db; }
+
+        /* body */
+        .tl-body { flex: 1; padding: 8px 0 24px; min-width: 0; }
+        .tl-label {
+            font-size: 14px; font-weight: 600; color: var(--text);
+            transition: color 0.3s;
+        }
+        .tl-item.pending .tl-label { color: #9ca3af; }
+        .tl-desc {
+            font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.5;
+        }
+        .tl-item.pending .tl-desc { color: #d1d5db; }
+        .tl-badge {
+            display: inline-block;
+            font-size: 11px; font-weight: 600;
+            padding: 3px 9px; border-radius: 20px;
+            margin-top: 8px;
+        }
+        .badge-active    { background: var(--accent-light); color: var(--accent); }
+        .badge-done      { background: var(--green-light);  color: #065f46; }
+        .badge-pending   { background: #f3f4f6; color: #9ca3af; }
+        .badge-approved  { background: var(--green-light);  color: #065f46; }
+        .badge-rejected  { background: var(--red-light);    color: #991b1b; }
+        .badge-counter   { background: var(--indigo-light); color: #3730a3; }
+
+        /* ── Refresh note ── */
+        .refresh-note {
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-top: 18px;
+            letter-spacing: 0.02em;
+        }
+        .refresh-note span { font-weight: 600; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="brand-icon">🛡️</div>
+    <div class="brand-text">
+        <div class="brand-name">Term Insurance Tracker</div>
+        <div class="brand-sub" id="ref-display">Loading...</div>
+    </div>
+    <div class="live-badge">
+        <div class="live-dot"></div>
+        Live
+    </div>
+</div>
+
+<div class="content">
+
+    <!-- ETA Card -->
+    <div class="eta-card waiting" id="eta-card">
+        <div class="eta-label">Estimated Completion</div>
+        <div class="eta-days" id="eta-days">—</div>
+        <div class="eta-unit" id="eta-unit">Loading your status...</div>
+        <div class="eta-ref" id="eta-ref-label"></div>
+    </div>
+
+    <!-- Snag Banner (hidden by default) -->
+    <div class="snag-banner hidden" id="snag-banner">
+        <div class="snag-icon">⚠️</div>
+        <div>
+            <div class="snag-title">Action Required — Clock Paused</div>
+            <div class="snag-desc">Our underwriting team needs a quick clarification. Please reply to the Telegram message with a photo of your income document to resume your application.</div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-card">
+        <div class="timeline-title">Your Journey</div>
+        <div class="timeline" id="timeline">
+            <div style="text-align:center;color:#9ca3af;padding:20px 0;font-size:14px">Loading your journey...</div>
+        </div>
+    </div>
+
+    <div class="refresh-note">Updates automatically every <span>5 seconds</span></div>
+</div>
+
+<script>
+    const TOKEN = "{{ token }}";
+
+    const TRACKS = {
+        none:     ["0", "1", "3", "5"],
+        tele:     ["0", "1", "2a", "2b", "3", "5"],
+        physical: ["0", "1", "2a", "2b", "3", "5"]
+    };
+
+    const STAGE_ORDER_MAP = {
+        none:     { "0":0, "1":1, "3":2, "4":2.5, "5a":3, "5b":3, "5c":3 },
+        tele:     { "0":0, "1":1, "2a":2, "2b":3, "3":4, "4":4.5, "5a":5, "5b":5, "5c":5 },
+        physical: { "0":0, "1":1, "2a":2, "2b":3, "3":4, "4":4.5, "5a":5, "5b":5, "5c":5 }
+    };
+
+    const STAGE_META = {
+        "0":  { icon: "📥", label: "Application Received",   desc: "We have successfully received your term insurance application." },
+        "1":  { icon: "📄", label: "Documents Submitted",    desc: "Your identity and income documents are being reviewed by our team." },
+        "2a": { icon: "🩺", label: "Medical Scheduled",      desc: "Your complimentary medical check is being arranged. It takes less than 30 minutes." },
+        "2b": { icon: "🔬", label: "Medical Completed",      desc: "Your medical reports have been received and synced into your file." },
+        "3":  { icon: "🔍", label: "Underwriting Review",    desc: "Our senior underwriting team is reviewing your application. No action needed from you." },
+        "5":  { icon: "🏁", label: "Final Decision",         desc: "Your application is being finalised." }
+    };
+
+    const FINAL_VARIANTS = {
+        "5a": { icon: "🎉", label: "Policy Approved!",       desc: "Congratulations! Your term life insurance cover is officially active. Check your email for your policy document.", cls: "final-green", badge: "badge-approved", badgeText: "✓ Approved" },
+        "5b": { icon: "❌", label: "Application Rejected",   desc: "Unfortunately our underwriting team was unable to proceed with your current profile. Check your email for the full explanation.", cls: "final-red", badge: "badge-rejected", badgeText: "Rejected" },
+        "5c": { icon: "🔄", label: "Counter Offer Issued",   desc: "A revised premium proposal has been prepared based on your health checks. Check your email to review and accept.", cls: "final-indigo", badge: "badge-counter", badgeText: "Counter Offer" }
+    };
+
+    function getStagePosition(medical, stage) {
+        const map = STAGE_ORDER_MAP[medical] || STAGE_ORDER_MAP.physical;
+        return map[stage] ?? -1;
+    }
+
+    function renderTimeline(currentStage, medical, frozen) {
+        const track = TRACKS[medical] || TRACKS.physical;
+        const currentPos = getStagePosition(medical, currentStage);
+        const isFinalStage = currentStage && currentStage.startsWith("5");
+        const finalMeta = FINAL_VARIANTS[currentStage] || null;
+
+        const tl = document.getElementById("timeline");
+        tl.innerHTML = "";
+
+        track.forEach((stageKey, idx) => {
+            const isLastItem = (idx === track.length - 1);
+            const stagePos = getStagePosition(medical, stageKey);
+
+            let status;
+            if (stageKey === "5") {
+                if (isFinalStage) status = "active";
+                else if (currentPos >= stagePos) status = "active";
+                else status = "pending";
+            } else {
+                if (currentPos > stagePos) status = "completed";
+                else if (Math.floor(currentPos) === Math.floor(stagePos) && currentStage === stageKey) status = "active";
+                else if (currentStage && currentPos >= stagePos) status = "completed";
+                else status = "pending";
+            }
+
+            // For the final node override
+            let meta = STAGE_META[stageKey] || {};
+            let nodeCls = "";
+            let badge = "";
+            let badgeText = "";
+
+            if (stageKey === "5" && isFinalStage && finalMeta) {
+                meta = { icon: finalMeta.icon, label: finalMeta.label, desc: finalMeta.desc };
+                nodeCls = finalMeta.cls;
+                badge = finalMeta.badge;
+                badgeText = finalMeta.badgeText;
+            } else if (status === "active") {
+                badge = "badge-active";
+                badgeText = frozen ? "⏸ Paused" : "● In Progress";
+            } else if (status === "completed") {
+                badge = "badge-done";
+                badgeText = "✓ Done";
+            } else {
+                badge = "badge-pending";
+                badgeText = "Upcoming";
+            }
+
+            const item = document.createElement("div");
+            item.className = `tl-item ${status} ${nodeCls}`;
+            item.innerHTML = `
+                <div class="tl-line"></div>
+                <div class="tl-node">
+                    <span class="tl-node-icon">${meta.icon || "○"}</span>
+                </div>
+                <div class="tl-body">
+                    <div class="tl-label">${meta.label || stageKey}</div>
+                    <div class="tl-desc">${status !== "pending" ? (meta.desc || "") : ""}</div>
+                    <span class="tl-badge ${badge}">${badgeText}</span>
+                </div>
+            `;
+            tl.appendChild(item);
+        });
+    }
+
+    function updateEtaCard(etaDays, frozen, currentStage) {
+        const card  = document.getElementById("eta-card");
+        const days  = document.getElementById("eta-days");
+        const unit  = document.getElementById("eta-unit");
+
+        const isFinal = currentStage && currentStage.startsWith("5");
+
+        if (!currentStage) {
+            card.className = "eta-card waiting";
+            days.textContent = "—";
+            unit.textContent = "Waiting for your application to begin...";
+            return;
+        }
+        if (isFinal) {
+            card.className = "eta-card done";
+            days.textContent = "✓";
+            unit.textContent = "Your application has been finalised.";
+            return;
+        }
+        if (frozen) {
+            card.className = "eta-card frozen";
+            days.textContent = etaDays;
+            unit.textContent = etaDays === 1 ? "Day Remaining — Clock Paused" : "Days Remaining — Clock Paused";
+            return;
+        }
+        card.className = "eta-card active";
+        if (etaDays <= 0) {
+            days.textContent = "✓";
+            unit.textContent = "Completed";
+        } else if (etaDays <= 2) {
+            days.textContent = "1–2";
+            unit.textContent = "Days Remaining";
+        } else {
+            days.textContent = etaDays;
+            unit.textContent = etaDays === 1 ? "Day Remaining" : "Days Remaining";
+        }
+    }
+
+    async function fetchStatus() {
+        try {
+            const res  = await fetch("/api/track_status/" + TOKEN);
+            const data = await res.json();
+            if (data.error) return;
+
+            const { current_stage, medical, eta_days, frozen, ref } = data;
+
+            document.getElementById("ref-display").textContent = ref || "#TRK-12345";
+            document.getElementById("eta-ref-label").textContent = "Ref: " + (ref || "#TRK-12345");
+
+            updateEtaCard(eta_days, frozen, current_stage);
+
+            const snagBanner = document.getElementById("snag-banner");
+            if (current_stage === "4") {
+                snagBanner.classList.remove("hidden");
+            } else {
+                snagBanner.classList.add("hidden");
+            }
+
+            renderTimeline(current_stage, medical, frozen);
+        } catch (e) {
+            console.error("Tracker fetch error:", e);
+        }
+    }
+
+    fetchStatus();
+    setInterval(fetchStatus, 5000);
+</script>
+
+</body>
+</html>

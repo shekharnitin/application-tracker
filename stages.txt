@@ -1,0 +1,41 @@
+1. Document Upload (Confirmation)
+Concept: A user successfully submitting paperwork without the headache.
+
+Prompt:
+
+A friendly 2D character smiling while tapping a giant smartphone screen. A crisp, clean document icon with a green checkmark gently floats out of the phone. [Append Master Style Formula]
+
+2. Medical Test Required
+Concept: Making a health checkup feel approachable and easy, not clinical or scary.
+
+Prompt:
+
+A charming, minimalist 2D character standing next to a friendly health professional wearing a stethoscope. A cute, simple calendar icon floats between them. [Append Master Style Formula]
+
+3. Underwriting Stage (In Progress)
+Concept: Visualizing a diligent review process happening smoothly behind the scenes.
+
+Prompt:
+
+A minimalist 2D character sitting at a tidy desk, calmly looking through a giant magnifying glass at a neat stack of documents with a loading symbol nearby. [Append Master Style Formula]
+
+4. Missing / Additional Document Upload
+Concept: Signaling a minor bump in the road without causing panic or anxiety.
+
+Prompt:
+
+A friendly 2D character looking at a giant document icon that has a single missing puzzle piece or a soft yellow exclamation mark badge on it. Keep it light and non-threatening. [Append Master Style Formula]
+
+5A. Final Update: Approved! 
+Concept: Pure celebration and peace of mind.
+
+Prompt:
+
+A joyous 2D character tossing a few pieces of confetti into the air under a massive, solid green checkmark. Expressive, happy, and triumphant. [Append Master Style Formula]
+
+5B. Final Update: Counter Offer 
+Concept: Transparency and a balance of options, keeping it transparent but neutral.
+
+Prompt:
+
+A friendly 2D character standing in front of a neat, minimalist balance scale or a simple presentation chart showing two options side-by-side. Clean and analytical. [Append Master Style Formula]

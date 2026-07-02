@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Uploads (ephemeral, don't commit)
+static/uploads/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,67 @@
+﻿Product Requirement Document (PRD)
+Feature: Omnichannel Term Insurance Tracker (WhatsApp-First)
+1. Executive Summary & Objective
+The goal of this feature is to eliminate the transparency "black box" of traditional term insurance underwriting. By introducing a proactive, WhatsApp-First tracking pipeline backed by a time-sensitive Email fallback mechanism, we keep the applicant continuously reassured and engaged.
+To prevent user anxiety during high-leverage friction points (such as medical tests or missing documents), the notification framework will leverage a unified, minimalist, flat 2D vector asset system designed to make the experience feel clean, accessible, and premium.
+2. User Journey & Core Logic Matrix
+The system adheres to a strict multi-channel hierarchy: WhatsApp serves as the high-frequency pulse check, while Email acts as the permanent ledger and secondary safety net.
+
+
+Stage
+	Primary Channel (Instant)
+	Fallback Channel (Delayed)
+	Fallback Trigger Condition
+	1. Document Upload
+	📲 WhatsApp Alert
+	✉️ Immediate Email
+	None (Dispatched concurrently as a formal receipt)
+	2. Medical Test
+	📲 WhatsApp Interactive Flow
+	✉️ Fallback Email
+	Dispatched if no appointment is booked within 24 hours
+	3. Underwriting Stage
+	📲 WhatsApp Status Update
+	❌ No Email
+	None (Purely informational status progression)
+	4. Missing/Add. Docs
+	📲 WhatsApp Chat Intake
+	✉️ Fallback Email
+	Dispatched if upload is not finalized within 12 hours
+	5. Final Update
+	📲 WhatsApp Notification
+	✉️ Immediate Email
+	None (Dispatched concurrently with formal policy/counter terms)
+	3. Functional Requirements & Technical Specifications
+3.1 Stage-by-Stage Workflow Specifications
+Stage 1: Document Ingestion & Confirmation
+* System Action: Fired immediately upon application submittal.
+* WhatsApp Specification: High-level acknowledgment message containing a unique {{Tracking_ID}}.
+* Email Specification: Full transactional confirmation letter outlining user disclosures and next structural steps.
+Stage 2: Medical Examination Management (Conditional Execution)
+* System Action: System parses age, lifestyle parameters, and {{Sum_Assured}} configurations. If underwriting logic bypasses medicals, progress directly to Stage 3.
+* WhatsApp Interaction Feature: Incorporates a direct button hook utilizing WhatsApp Flows to let users select a calendar slot directly in the native application layout.
+* Fallback Sequence: If Stage_2_Booking_Status remains unconfirmed at T + 24 Hours, execute the fallback engine to deliver the secondary scheduling email with embedded .ics calendar calendar invites.
+Stage 3: Core Underwriting Pipeline
+* System Action: Triggers when initial document review and medical reports are uploaded.
+* Channel Strategy: WhatsApp exclusive to prevent email saturation.
+* System Constraint: Status inquiries typed by the user (e.g., "status", "update") must invoke an automated conversational webhook querying live operational placement (e.g., "Your file is 4th in the verification queue").
+Stage 4: Exceptions & Missing Documentation Ingestion (Conditional Execution)
+* System Action: Fired if the underwriting desk flags an unreadable, incomplete, or supplementary documentation layer (e.g., localized income verification slip changes).
+* WhatsApp In-App Capability: The chatbot configuration must accept direct system media uploads. Users can snap a smartphone photo and send it directly in the chat to clear the exception flag.
+* Fallback Sequence: If zero data ingestion happens by T + 12 Hours, broadcast an automated high-priority fallback email containing a desktop-ready secure upload route.
+Stage 5: Final Disposition Pipeline
+* System Action: Triggered on final human or rules-engine verdict.
+* Branching Automation Logic:
+   * Path A (Approved): Concurrent execution on WhatsApp and Email delivering the finalized {{Policy_Number}} and binding legal contracts.
+   * Path B (Counter Offer): Triggered if premium adjustments or coverage ceilings shift due to health metrics. Email holds the line-item amendment proposal with an interactive deep-link button labeled [Review & Accept Counter Offer].
+4. Visual Asset Framework & Identity
+To scale across messaging breakpoints flawlessly, all graphic elements must seamlessly synchronize across the text formats.
+ UI & Asset Production Guidelines
+* Aesthetic Blueprint: Strict compliance with flat, unshaded 2D vector startup styling.
+* Background Metric: Solid, absolute white background spaces (#FFFFFF) with zero drop shadows, lighting layers, gradients, or floating artifacts.
+* Palette Parameters: Sage Green and Soft Teal handle primary focus points; Muted Navy Blue establishes character contours and anchor layouts; Soft Yellow behaves as an isolation indicator for Stage 4 bottlenecks.
+* Proportion Criteria: Scaled to a fixed 1:1 aspect ratio square to render perfectly inside a compact WhatsApp text payload preview window.
+5. Non-Functional & System Requirements
+* Security & Encryption Compliance: WhatsApp media collection pathways (Stage 4) must funnel data directly to encrypted cloud storage buckets. No customer PII or document imagery may be locally cached on intermediary communication servers.
+* Channel Failover Resiliency: If the WhatsApp Business API returns a delivery failure status code (e.g., user number has disconnected data access or active blockades), the platform framework must automatically override standard timing limits and dispatch the Fallback Email variant within 5 minutes.
+* Localization Structure: System notification fields must support conditional language parameter parsing based on applicant system locations or registration selection profiles.
