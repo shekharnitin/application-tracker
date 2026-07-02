@@ -25,7 +25,7 @@ templates = Jinja2Templates(directory="templates")
 # Global state
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 
 state = {
     "users": {},          # Maps lowercase username -> chat_id
