@@ -143,15 +143,20 @@ def unfreeze_eta(username: str, chat_id: int):
     state["user_tracks"].setdefault(username, {})["eta_days"] = new_eta
     state["user_tracks"][username]["frozen"] = False
 
+    # Generate tracking link for unfreeze message
+    token = state["user_tokens"].get(username)
+    track_link = f'\n\n🔗 <a href="{BASE_URL}/track/{token}">Track your application live</a>' if token else ""
+
     msg = (
         f"✅ Document received! Your timeline has been unfrozen.\n\n"
-        f"---\n"
-        f"📊 *Progress:* Back on track!\n"
-        f"⏱️ *ETA:* {new_eta} Day{'s' if new_eta != 1 else ''} Remaining\n"
+        f"――――――――――\n"
+        f"📊 <b>Progress:</b> Back on track!\n"
+        f"⏱️ <b>ETA:</b> {new_eta} Day{'s' if new_eta != 1 else ''} Remaining\n"
         f"💡 Thanks for acting quickly! Your application is back in the review queue."
+        f"{track_link}"
     )
     url = f"{TELEGRAM_API_URL}/sendMessage"
-    requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"})
+    requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"})
 
 # Start polling thread
 thread = threading.Thread(target=poll_telegram, daemon=True)
@@ -261,16 +266,16 @@ def calculate_eta(stage_str: str, medical: str, username: str = None):
     elif username and frozen:
         state["user_tracks"].setdefault(username, {})["frozen"] = True
 
-    # Build the footer block
-    eta_text = f"\n\n---\n📊 *Progress:* {progress_pct}%\n"
+    # Build the footer block (HTML mode)
+    eta_text = f"\n\n――――――――――\n📊 <b>Progress:</b> {progress_pct}%\n"
     if frozen:
-        eta_text += f"⏱️ *ETA:* {eta_days} Days _(Clock paused until upload)_\n"
+        eta_text += f"⏱️ <b>ETA:</b> {eta_days} Days <i>(Clock paused until upload)</i>\n"
     elif eta_days == 0:
-        eta_text += f"⏱️ *ETA:* ✅ Completed\n"
+        eta_text += f"⏱️ <b>ETA:</b> ✅ Completed\n"
     elif eta_days <= 2:
-        eta_text += f"⏱️ *ETA:* 1–2 Days Remaining\n"
+        eta_text += f"⏱️ <b>ETA:</b> 1–2 Days Remaining\n"
     else:
-        eta_text += f"⏱️ *ETA:* {eta_days} Days Remaining\n"
+        eta_text += f"⏱️ <b>ETA:</b> {eta_days} Days Remaining\n"
 
     if highlight:
         eta_text += f"💡 {highlight}"
@@ -349,9 +354,9 @@ async def send_stage_message(stage: str, username: str = None, medical: str = "p
 
     eta_text, _ = calculate_eta(stage, medical, username)
 
-    # Append live tracking link
+    # Append live tracking link (HTML anchor — renders as clickable in Telegram)
     track_url = f"{BASE_URL}/track/{token}"
-    eta_text += f"\n\n🔗 [Track your application live]({track_url})"
+    eta_text += f'\n\n🔗 <a href="{track_url}">Track your application live</a>'
 
     try:
         if data["photo"]:
@@ -359,7 +364,7 @@ async def send_stage_message(stage: str, username: str = None, medical: str = "p
             payload = {
                 "chat_id": chat_id,
                 "caption": data["text"] + eta_text,
-                "parse_mode": "Markdown"
+                "parse_mode": "HTML"
             }
             with open(data["photo"], 'rb') as photo_file:
                 resp = requests.post(url, data=payload, files={"photo": photo_file})
@@ -368,7 +373,7 @@ async def send_stage_message(stage: str, username: str = None, medical: str = "p
             payload = {
                 "chat_id": chat_id,
                 "text": data["text"] + eta_text,
-                "parse_mode": "Markdown"
+                "parse_mode": "HTML"
             }
             resp = requests.post(url, json=payload)
             
