@@ -1,6 +1,7 @@
 import os
 import time
 import secrets
+import json
 import threading
 import requests
 from pydantic import BaseModel
@@ -36,6 +37,101 @@ state = {
     "track_tokens": {},   # token -> username
     "user_tokens": {}     # username -> token
 }
+
+db_lock = threading.Lock()
+
+def load_persisted_state():
+    global state
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        try:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            conn = psycopg2.connect(db_url)
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS state_store (
+                    key VARCHAR(50) PRIMARY KEY,
+                    value JSONB
+                )
+            """)
+            conn.commit()
+            
+            cur.execute("SELECT value FROM state_store WHERE key = 'app_state'")
+            row = cur.fetchone()
+            if row:
+                loaded_state = row[0]
+                for k, v in loaded_state.items():
+                    if k in state:
+                        state[k] = v
+                print("State loaded from PostgreSQL database successfully.")
+            cur.close()
+            conn.close()
+            return
+        except Exception as e:
+            print(f"Error loading state from PostgreSQL: {e}. Falling back to file storage.")
+
+    if os.path.exists("state_persisted.json"):
+        try:
+            with open("state_persisted.json", "r") as f:
+                loaded_state = json.load(f)
+                for k, v in loaded_state.items():
+                    if k in state:
+                        state[k] = v
+            print("State loaded from local file state_persisted.json successfully.")
+        except Exception as e:
+            print(f"Error loading state from file: {e}")
+
+def save_persisted_state():
+    global state
+    with db_lock:
+        serializable_state = {
+            "users": state["users"],
+            "last_update_id": state["last_update_id"],
+            "uploads": state["uploads"],
+            "user_tracks": state["user_tracks"],
+            "track_tokens": state["track_tokens"],
+            "user_tokens": state["user_tokens"]
+        }
+        
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            try:
+                import psycopg2
+                from psycopg2.extras import Json
+                conn = psycopg2.connect(db_url)
+                cur = conn.cursor()
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS state_store (
+                        key VARCHAR(50) PRIMARY KEY,
+                        value JSONB
+                    )
+                """)
+                cur.execute("""
+                    INSERT INTO state_store (key, value)
+                    VALUES ('app_state', %s)
+                    ON CONFLICT (key)
+                    DO UPDATE SET value = EXCLUDED.value
+                """, (Json(serializable_state),))
+                conn.commit()
+                cur.close()
+                conn.close()
+                return
+            except Exception as e:
+                print(f"Error saving state to PostgreSQL: {e}. Falling back to file storage.")
+
+        try:
+            with open("state_persisted.json", "w") as f:
+                json.dump(serializable_state, f, indent=4)
+        except Exception as e:
+            print(f"Error saving state to file: {e}")
+
+load_persisted_state()
+
 
 def send_mock_email(username):
     chat_id = state["users"].get(username)
@@ -84,7 +180,9 @@ def poll_telegram():
                                 username = from_user.get("first_name", f"user_{chat_id}")
                             
                             username_lower = username.lower()
-                            state["users"][username_lower] = chat_id
+                            if state["users"].get(username_lower) != chat_id:
+                                state["users"][username_lower] = chat_id
+                                save_persisted_state()
                             
                         # Handle photo
                         if "photo" in message:
@@ -106,6 +204,9 @@ def poll_telegram():
                                 print(f"{username} uploaded a document. Canceling Stage 4 fallback timer.")
                                 del state["stage4_pending"][username_lower]
                                 unfreeze_eta(username_lower, chat_id)
+                    
+                    if data.get("result"):
+                        save_persisted_state()
                             
         except Exception as e:
             print(f"Polling error: {e}")
@@ -132,6 +233,7 @@ def download_telegram_file(file_id, filename, username="unknown"):
                         "username": username
                     })
                     print(f"Downloaded file: {safe_filename} from {username}")
+                    save_persisted_state()
     except Exception as e:
         print(f"Error downloading file: {e}")
 
@@ -143,20 +245,17 @@ def unfreeze_eta(username: str, chat_id: int):
     state["user_tracks"].setdefault(username, {})["eta_days"] = new_eta
     state["user_tracks"][username]["frozen"] = False
 
-    # Generate tracking link for unfreeze message
-    token = state["user_tokens"].get(username)
-    track_link = f'\n\n🔗 <a href="{BASE_URL}/track/{token}">Track your application live</a>' if token else ""
-
     msg = (
         f"✅ Document received! Your timeline has been unfrozen.\n\n"
         f"――――――――――\n"
         f"📊 <b>Progress:</b> Back on track!\n"
         f"⏱️ <b>ETA:</b> {new_eta} Day{'s' if new_eta != 1 else ''} Remaining\n"
         f"💡 Thanks for acting quickly! Your application is back in the review queue."
-        f"{track_link}"
     )
     url = f"{TELEGRAM_API_URL}/sendMessage"
     requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"})
+    save_persisted_state()
+
 
 # Start polling thread
 thread = threading.Thread(target=poll_telegram, daemon=True)
@@ -354,9 +453,10 @@ async def send_stage_message(stage: str, username: str = None, medical: str = "p
 
     eta_text, _ = calculate_eta(stage, medical, username)
 
-    # Append live tracking link (HTML anchor — renders as clickable in Telegram)
-    track_url = f"{BASE_URL}/track/{token}"
-    eta_text += f'\n\n🔗 <a href="{track_url}">Track your application live</a>'
+    # Append live tracking link (HTML anchor — renders as clickable in Telegram) only on Stage 0
+    if stage == "0":
+        track_url = f"{BASE_URL}/track/{token}"
+        eta_text += f'\n\n🔗 <a href="{track_url}">Track your application live</a>'
 
     try:
         if data["photo"]:
@@ -382,6 +482,7 @@ async def send_stage_message(stage: str, username: str = None, medical: str = "p
                 state["stage4_pending"][username] = time.time()
                 print(f"Started 30-second Stage 4 fallback timer for {username}")
                 
+            save_persisted_state()
             return {"success": True, "message": f"Sent stage {stage} message."}
         else:
             return {"error": resp.text}

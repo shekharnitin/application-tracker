@@ -6,6 +6,19 @@ __pycache__/
 
 # Uploads (ephemeral, don't commit)
 static/uploads/
+Document Loop.png
+Dynamic State Machine.txt
+health.png
+localhost_8000_.png
+prd.txt
+Resolution Center.png
+screen.png
+stages.txt
+Telemedical Booking.png
+term.png
+time.csv
+time.txt
+tracks.csv
 
 # OS
 .DS_Store

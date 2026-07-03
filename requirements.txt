@@ -5,3 +5,5 @@ python-dotenv
 python-multipart
 jinja2
 pydantic
+psycopg2-binary
+
