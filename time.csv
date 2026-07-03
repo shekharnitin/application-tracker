@@ -1,7 +1,0 @@
-Passed Stage,What the System Just Discovered,Days Dropped,New Displayed ETA
-0. Submission,Baseline (Worst-case assumption),—,12 Days
-1. PIQA Passed,Application data is clean; no structural layout errors.,-1 Day,11 Days
-2. Medical Decision,Scenario A: Medicals waived entirely.Scenario B: Only Tele-med required.Scenario C: Physical exam needed.,-5 Days-3 Days-0 Days,6 Days8 Days11 Days
-3. Medical Completed,Reports are safely ingested into the system.,-1 Day (Lab buffer removed),5 Days (assuming physical track)
-4. Underwriting Entry,24 Hours pass with no Document Snags raised.,-3 Days (Snag buffer removed),2 Days
-5. Final Sign-off,Policy is approved directly without a Counter Offer.,-2 Days (Counter buffer removed),🚀 Issued Instantly!
